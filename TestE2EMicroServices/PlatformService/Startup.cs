@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PlatformService.Abstract.Http;
 using PlatformService.Data;
+using PlatformService.Dtos;
+using PlatformService.SyncDataServices.Http;
 
 namespace PlatformService
 {
@@ -17,6 +20,12 @@ namespace PlatformService
             {
                 options.UseInMemoryDatabase("InMem");
             });
+            services.Configure<CommandeServiceMetadataDto>(options => Configuration.GetSection("CommandsService").Bind(options));
+            services.AddHttpClient("CommandClient", options =>
+            {
+                options.BaseAddress = new Uri(Configuration.GetSection("CommandsService:BaseUrl").Value);
+            });
+            services.AddScoped<ICommandDataClient, CommandDataClient>();
             services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
             services.AddScoped<IPlatformRepo, PlatformRepo>();
             services.AddControllers();
