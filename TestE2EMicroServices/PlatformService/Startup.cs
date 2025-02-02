@@ -9,17 +9,36 @@ namespace PlatformService
     public class Startup
     {
         public IConfiguration Configuration { get; }
-        public Startup(IConfiguration configuration)
+
+        private readonly IWebHostEnvironment _environment;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment environment)
         {
             Configuration = configuration;
+            _environment = environment;
         }
 
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<AppDbContext>(options =>
             {
-                options.UseInMemoryDatabase("InMem");
+                options.UseSqlServer(Configuration.GetConnectionString("PlatformConnStr"));
             });
+            if (_environment.IsDevelopment())
+            {
+                services.AddDbContext<AppDbContext>(options =>
+                {
+                    options.UseInMemoryDatabase("InMem");
+                });
+            }
+            else
+            {
+                services.AddDbContext<AppDbContext>(options =>
+                {
+                    options.UseSqlServer(Configuration.GetConnectionString("PlatformConnStr"));
+                });
+            }
+
             services.Configure<CommandeServiceMetadataDto>(options => Configuration.GetSection("CommandsService").Bind(options));
             services.AddHttpClient("CommandClient", options =>
             {
@@ -43,7 +62,7 @@ namespace PlatformService
                 app.UseSwaggerUI();
             }
             app.UseHttpsRedirection();
-            SeedDatabase.Seed(app);
+            SeedDatabase.Seed(app, env);
             app.UseAuthorization();
             app.UseEndpoints(endpoints =>
             {
